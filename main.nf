@@ -8,29 +8,18 @@
 // Inputs, Test Dataset plus relevant ref genome
 // Oisin
 
-
-params.outdir = "./"
-fasta_path = ("/data/MSc/2021/clipseq/sirna_trimmed_chr20.fa")
-fastq_path = ("/data/MSc/2021/clipseq/sirna_trimmed_chr20.fq.gz")
-gtf_path = ("/data/MSc/2021/clipseq/ref/chr20.gtf")
-refgenome_path = ("/data/MSc/2021/clipseq/ref/chr20.fa")
-smrna_path = ("/data/MSc/2021/clipseq/Homo_sapiens.smallRNA.fa")
-star_path = ("/data/MSc/2021/clipseq/index_star_ch20")
-multiqc_config = ("/data/omccaffrey/MA5112/nextflow_assignment/running_clipseq.nf/config_and_docs/multiqc_config.yaml")
-output_docs = ("/data/omccaffrey/MA5112/nextflow_assignment/running_clipseq.nf/config_and_docs/output.md")
-
 // Setup channels
-ch_smrna_fasta = Channel.value(smrna_path)
-ch_ref_fai = Channel.value(refgenome_path)
-ch_ref = Channel.value(refgenome_path)
-ch_gtf_star = Channel.value(gtf_path)
-ch_fastq_fastqc_pretrim = Channel.value(fastq_path)
-ch_star_index = Channel.value(star_path)
-ch_fasta = Channel.value(refgenome_path)
-ch_fastq_umi = Channel.value(fastq_path)
-ch_fasta_pureclip = Channel.value(refgenome_path)
-ch_multiqc_config = Channel.value(multiqc_config)
-ch_output_docs = Channel.value(output_docs)
+ch_smrna_fasta = Channel.value(params.smrna_path)
+ch_ref_fai = Channel.value(params.refgenome_path)
+ch_ref = Channel.value(params.refgenome_path)
+ch_gtf_star = Channel.value(params.gtf_path)
+ch_fastq_fastqc_pretrim = Channel.value(params.fastq_path)
+ch_star_index = Channel.value(params.star_path)
+ch_fasta = Channel.value(params.refgenome_path)
+ch_fastq_umi = Channel.value(params.fastq_path)
+ch_fasta_pureclip = Channel.value(params.refgenome_path)
+ch_multiqc_config = Channel.value(params.multiqc_config)
+ch_output_docs = Channel.value(params.output_docs)
 ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multiqc_config, checkIfExists: true) : Channel.empty()
 
 
@@ -57,6 +46,14 @@ process generate_premap_index{
 }
 
 // Generate fai from reference file
+
+/*
+ * ch_ref_fai and ch_ref are the same file.
+ * Remeber you can reuse channels by specifying: ch_foo = Channel.value(file(params.file))
+ * and calling using file(x) from ch_foo
+ * see variant calling tutorial for examples.
+ */
+
 process generate_fai{
 
   tag "$ref"
@@ -74,6 +71,13 @@ process generate_fai{
 }
 
 // Generate STAR index
+
+/*
+ * This process is hardcoded, you're not using input and output channels here.
+ * please use reference fasta and gtf files as Inputs, "index_star_ch20" as output.
+ * remove cd command and repalce with mkdir -p index_star_ch20/
+ * (You had the files correctly staged when you showed me the errors?)
+ */
 
 process star_index{
 
@@ -102,18 +106,26 @@ process star_index{
 
 // Parameters
 
+/*
+ * Please stage parameters within the nextflow.config file
+ * input reads are typically defined as 'input'
+ */
+
 params.reads = "/data/MSc/2021/clipseq/sirna_trimmed_chr20.fq.gz"
 
 // Initialise Channel
 reads_ch = Channel.fromFilePairs(params.reads)
 
-process FastQC {
+// Put them into 3 channels, hopefully you will see why. As it stands, you are re-using reads_ch (no-no).
+(fastqc_reads, trimming_reads, raw_reads) = reads_ch.into(3)
 
+process FastQC {
+something
       publishDir "${params.outdir}/QC/raw", mode:'copy'
 
       input:
 
-      tuple val(key), file(reads) from reads_ch
+      tuple val(key), file(reads) from fastqc_reads
 
       output:
 
@@ -130,30 +142,43 @@ process FastQC {
 //Step 2 - Trimming
 // Test fasta file provided was aready trimmed
 
-// Parameters
+/*
+ * so you want to use a conditional statement here to skip trimming
+ * I've added the boolean parameter 'trimming' to the nextflow.config.
+ * if(params.trimming == true){
+ *  <do trimming>
+ * } else{
+ * < stage reads>
+ * }
+ */
 
-//params.reads = "/data/MSc/2021/clipseq/sirna_trimmed_chr20.fq.gz"
+/*
+ * basically, use trim reads for aligners, or use raw reads.
+ * the output channel will be mapping_reads, which is only activated once by the trimming parameter + if else block.
+ */
 
-// Initialise Channel
-//ch_reads= Channel.fromFilePairs(params.reads)
+if(params.trimming == true){
+    process cutadapt {
 
-//process cutadapt {
-    //tag "$key"
-    //publishDir "${params.outdir}/cutadapt", mode: params.publish_dir_mode
+        tag "$key"
+        publishDir "${params.outdir}/cutadapt", mode: params.publish_dir_mode
 
-    //input:
-    //tuple val(key), file(reads) from ch_reads
+        input:
+        tuple val(key), file(reads) from trimming_reads
 
-    //output:
-    //tuple val(key), path("${key}.trimmed.fq") into ch_trimmed
-    //path "*.log" into ch_cutadapt_mqc
+        output:
+        tuple val(key), path("${key}.trimmed.fq") into mapping_reads
+        path "*.log" into ch_cutadapt_mqc
 
-    //script:
-    //"""
-    //ln -s $reads ${key}.fq
-    //cutadapt -j $task.cpus -a ${params.adapter} -m 12 -o ${key}.trimmed.fq ${key}.fq > ${key}_cutadapt.log
-    //"""
-//}
+        script:
+        """
+        ln -s $reads ${key}.fq
+        cutadapt -j $task.cpus -a ${params.adapter} -m 12 -o ${key}.trimmed.fq ${key}.fq > ${key}_cutadapt.log
+        """
+    }
+  } else if(params.trimming == false){
+         mapping_reads = raw_reads
+    }
 
 
 //Step 3 - Premapping
@@ -162,8 +187,8 @@ process FastQC {
 // Parameters
 
 
-
-ch_trimmed = Channel.fromFilePairs(params.reads)
+// dont do that, we want the reads coming from the previous if else statement
+//ch_trimmed = Channel.fromFilePairs(params.reads) (delete)
 
 
 process premap {
@@ -174,7 +199,7 @@ process premap {
 
     input:
 
-    tuple val(key), file(reads) from ch_trimmed
+    tuple val(key), file(reads) from mapping_reads
     path(index) from ch_bt2_index.collect()
 
     output:
@@ -387,7 +412,7 @@ process clipqc {
 
     script:
     """
-    /data/omccaffrey/MA5112/nextflow_assignment/running_clipseq.nf/clip_qc.py
+    clip_seq.py
     """
 }
 
@@ -408,19 +433,10 @@ process multiqc {
     file ('clipqc/*') from ch_clipqc_mqc.collect().ifEmpty([])
 
     output:
-    file "*multiqc_report.html" into ch_multiqc_report
-    file "*_data"
-    file "multiqc_plots"
+    file "*html" into ch_multiqc_report
 
     script:
-    rtitle = ''
-    rfilename = ''
-    if (!(workflow.runName ==~ /[a-z]+_[a-z]+/)) {
-        rtitle = "--title \"${workflow.runName}\""
-        rfilename = "--filename " + workflow.runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report"
-    }
-    custom_config_file = params.multiqc_config ? "--config $mqc_custom_config" : ''
     """
-    multiqc -f $rtitle $rfilename $custom_config_file .
+    multiqc .
     """
 }
