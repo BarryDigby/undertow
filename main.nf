@@ -412,7 +412,7 @@ process clipqc {
 
     script:
     """
-    python ${projectDir}/bin/clip_seq.py
+    clip_seq.py
     """
 }
 
