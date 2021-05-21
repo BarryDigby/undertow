@@ -116,9 +116,10 @@ params.reads = "/data/MSc/2021/clipseq/sirna_trimmed_chr20.fq.gz"
 // Initialise Channel
 // Put them into 3 channels, hopefully you will see why. As it stands, you are re-using reads_ch (no-no).
 Channel.fromFilePairs(params.reads)
-       .into{ fastqc_reads; trimming_reads; raw_reads; a_ch }
+       .into{ fastqc_reads; trimming_reads; raw_reads }
 
-a_ch.view()
+
+trimming_reads.view()
 
 // no need to publish FASTQC files if being collected by multiqc
 process FastQC {
@@ -155,7 +156,7 @@ process FastQC {
  */
 
 /*
- * the output channel will be 'mapping_reads', which is only initialised once by the trimming parameter, which decides to use trim or raw reads.
+ * the output channel will be 'mapping_reads', which is only initialised once by the trimming parameter, which decides to use trimmed or raw reads.
  */
 
 if(params.trimming == true){
