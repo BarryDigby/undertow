@@ -120,7 +120,7 @@ reads_ch = Channel.fromFilePairs(params.reads)
 (fastqc_reads, trimming_reads, raw_reads) = reads_ch.into(3)
 
 process FastQC {
-something
+
       publishDir "${params.outdir}/QC/raw", mode:'copy'
 
       input:
@@ -143,7 +143,8 @@ something
 // Test fasta file provided was aready trimmed
 
 /*
- * so you want to use a conditional statement here to skip trimming
+ * so you want to */
+ use a conditional statement here to skip trimming
  * I've added the boolean parameter 'trimming' to the nextflow.config.
  * if(params.trimming == true){
  *  <do trimming>
