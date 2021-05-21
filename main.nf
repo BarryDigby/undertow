@@ -143,8 +143,7 @@ process FastQC {
 // Test fasta file provided was aready trimmed
 
 /*
- * so you want to */
- use a conditional statement here to skip trimming
+ * so you want to use a conditional statement here to skip trimming
  * I've added the boolean parameter 'trimming' to the nextflow.config.
  * if(params.trimming == true){
  *  <do trimming>
