@@ -119,8 +119,6 @@ Channel.fromFilePairs(params.reads)
        .into{ fastqc_reads; trimming_reads; raw_reads }
 
 
-trimming_reads.view()
-
 // no need to publish FASTQC files if being collected by multiqc
 process FastQC {
 
@@ -178,7 +176,7 @@ if(params.trimming == true){
         cutadapt -j $task.cpus -a ${params.adapter} -m 12 -o ${key}.trimmed.fq ${key}.fq > ${key}_cutadapt.log
         """
     }
-}else if(params.trimming == false){
+}else {
           mapping_reads = raw_reads
 }
 
