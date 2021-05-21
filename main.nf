@@ -114,11 +114,13 @@ process star_index{
 params.reads = "/data/MSc/2021/clipseq/sirna_trimmed_chr20.fq.gz"
 
 // Initialise Channel
-reads_ch = Channel.fromFilePairs(params.reads)
+reads_ch = Channel.fromFilePairs(params.reads).view()
 
 // Put them into 3 channels, hopefully you will see why. As it stands, you are re-using reads_ch (no-no).
 (fastqc_reads, trimming_reads, raw_reads) = reads_ch.into(3)
 
+
+// no need to publish FASTQC files if being collected by multiqc
 process FastQC {
 
       publishDir "${params.outdir}/QC/raw", mode:'copy'
@@ -148,13 +150,12 @@ process FastQC {
  * if(params.trimming == true){
  *  <do trimming>
  * } else{
- * < stage reads>
+ * < stage raw reads>
  * }
  */
 
 /*
- * basically, use trim reads for aligners, or use raw reads.
- * the output channel will be mapping_reads, which is only activated once by the trimming parameter + if else block.
+ * the output channel will be mapping_reads, which is only initialised once by the trimming parameter, which decides to use trim or raw reads.
  */
 
 if(params.trimming == true){
@@ -176,9 +177,9 @@ if(params.trimming == true){
         cutadapt -j $task.cpus -a ${params.adapter} -m 12 -o ${key}.trimmed.fq ${key}.fq > ${key}_cutadapt.log
         """
     }
-  } else if(params.trimming == false){
-         mapping_reads = raw_reads
-    }
+}else if(params.trimming == false){
+          mapping_reads = raw_reads
+}
 
 
 //Step 3 - Premapping
