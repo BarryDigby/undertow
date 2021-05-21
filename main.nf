@@ -114,10 +114,10 @@ process star_index{
 params.reads = "/data/MSc/2021/clipseq/sirna_trimmed_chr20.fq.gz"
 
 // Initialise Channel
-reads_ch = Channel.fromFilePairs(params.reads).view()
-
 // Put them into 3 channels, hopefully you will see why. As it stands, you are re-using reads_ch (no-no).
-(fastqc_reads, trimming_reads, raw_reads) = reads_ch.into(3)
+Channel.fromFilePairs(params.reads)
+       .into{ fastqc_reads; trimming_reads; raw_reads }
+       .view()
 
 
 // no need to publish FASTQC files if being collected by multiqc
@@ -155,7 +155,7 @@ process FastQC {
  */
 
 /*
- * the output channel will be mapping_reads, which is only initialised once by the trimming parameter, which decides to use trim or raw reads.
+ * the output channel will be 'mapping_reads', which is only initialised once by the trimming parameter, which decides to use trim or raw reads.
  */
 
 if(params.trimming == true){
