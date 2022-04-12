@@ -1,0 +1,58 @@
+{
+  "project": {
+    "name": "AGBD",
+    "region_id": 3
+  },
+  "subnets": [
+    {
+      "address_range": "10.0.0.1/24",
+      "name": "Net"
+    }
+  ],
+  "vms": [
+    {
+      "cpu": 16,
+      "dns": "9.9.9.9,91.103.0.1,8.8.8.8,1.1.1.1",
+      "gateway_subnet": "10.0.0.1/24",
+      "image_id": 17,
+      "ip_addresses": [
+        {
+          "address": "10.0.0.2",
+          "nat": true
+        }
+      ],
+      "name": "AGBD",
+      "ram": 60,
+      "storage_type_id": 1,
+      "storages": [
+        {
+          "gb": 500,
+          "name": "drive",
+          "primary": true
+        }
+      ]
+    }
+  ],
+  "vpns": [
+  ],
+  "firewall_rules": [
+    {
+      "allow": true,
+      "debug_logging": false,
+      "description": "inb web",
+      "destination": "10.0.0.2/32",
+      "port": "80",
+      "protocol": "tcp",
+      "source": "0.0.0.0/0"
+    },
+    {
+      "allow": true,
+      "debug_logging": false,
+      "description": "foo",
+      "destination": "10.0.0.0/24",
+      "port": null,
+      "protocol": "any",
+      "source": "0.0.0.0/0"
+    }
+  ]
+}
